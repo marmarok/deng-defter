@@ -54,13 +54,15 @@ async function openFile(url, k) {
   if (!uid) { uid = "dd_" + Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 14); await kvSet("uid", uid); }
   name = (await kvGet("name")) || "";
   key = await kvGet("key");
+  // The link carries the password after "#" (never sent to the server): a tap on the link opens the app, no typing
+  const fromLink = decodeURIComponent((location.hash || "").slice(1));
+  if (fromLink) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+  if (!key && fromLink && await unlock(fromLink)) return;
   if (!key) { $("lock").hidden = false; return; }
   await afterUnlock();
 })();
 
-$("lockForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const pw = $("pw").value; $("pwBtn").disabled = true; $("pwErr").hidden = true;
+async function unlock(pw) {
   try {
     const k = await derive(pw);
     const txt = await openFile("data/index.bin", k);
@@ -68,7 +70,14 @@ $("lockForm").onsubmit = async (e) => {
     await kvSet("key", k); await kvSet("index", index);
     $("lock").hidden = true; $("pw").value = "";
     await afterUnlock(true);
-  } catch (err) {
+    return true;
+  } catch (err) { return false; }
+}
+
+$("lockForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const pw = $("pw").value; $("pwBtn").disabled = true; $("pwErr").hidden = true;
+  if (!(await unlock(pw))) {
     $("pwErr").textContent = navigator.onLine ? "Peyv şaş e. · Parola yanlış." : "Ji bo cara pêşî înternet lazim e. · İlk açılış için internet gerekli.";
     $("pwErr").hidden = false;
   }
@@ -83,7 +92,11 @@ $("whoForm").onsubmit = async (e) => {
 async function afterUnlock(fresh) {
   if (!fresh) {
     try { index = JSON.parse(await openFile("data/index.bin")); await kvSet("index", index); }
-    catch (e) { index = await kvGet("index"); }
+    catch (e) {
+      // a stored key that no longer opens the files (the password changed): ask again
+      if (e && e.name === "OperationError") { key = null; await kvSet("key", null); $("lock").hidden = false; return; }
+      index = await kvGet("index");
+    }
   }
   if (!index) { $("lock").hidden = false; return; }
   if (!name) { $("who").hidden = false; return; }
