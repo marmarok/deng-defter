@@ -46,6 +46,7 @@ async function openFile(url, k) {
   return text;
 }
 
+const OPEN_PW = "deng"; // same as .parola; shown on the lock card
 // ---------- boot ----------
 (async () => {
   if ("serviceWorker" in navigator) { try { await navigator.serviceWorker.register("sw.js"); } catch (e) {} }
@@ -58,6 +59,8 @@ async function openFile(url, k) {
   const fromLink = decodeURIComponent((location.hash || "").slice(1));
   if (fromLink) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
   if (!key && fromLink && await unlock(fromLink)) return;
+  // the password is printed on the lock card anyway (volunteers are friends, Resul wants no typing): try it before asking
+  if (!key && await unlock(OPEN_PW)) return;
   if (!key) { $("lock").hidden = false; return; }
   await afterUnlock();
 })();
@@ -94,7 +97,7 @@ async function afterUnlock(fresh) {
     try { index = JSON.parse(await openFile("data/index.bin")); await kvSet("index", index); }
     catch (e) {
       // a stored key that no longer opens the files (the password changed): ask again
-      if (e && e.name === "OperationError") { key = null; await kvSet("key", null); $("lock").hidden = false; return; }
+      if (e && e.name === "OperationError") { key = null; await kvSet("key", null); if (await unlock(OPEN_PW)) return; $("lock").hidden = false; return; }
       index = await kvGet("index");
     }
   }
