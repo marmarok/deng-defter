@@ -89,7 +89,11 @@ $("lockForm").onsubmit = async (e) => {
 $("whoForm").onsubmit = async (e) => {
   e.preventDefault();
   const v = $("nav").value.trim(); if (!v) return;
-  name = v; await kvSet("name", name); $("who").hidden = true; showTasks(); download();
+  name = v; await kvSet("name", name); $("who").hidden = true;
+  // identity record: one volunteer may use several devices or type the name differently; the code links them (kontrol/hub/kimlik.py)
+  const link = ($("kod").value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  await write("kimlik", `kimlik/${uid}`, "set", { name, code: myCode(), link, at: new Date().toISOString() });
+  showTasks(); download();
 };
 
 async function afterUnlock(fresh) {
@@ -149,9 +153,14 @@ function installHint() {
 }
 
 // ---------- task cards ----------
+function myCode() { return uid.slice(3, 8).toUpperCase(); }
 async function showTasks() {
   $("tasks").hidden = false; $("bar").hidden = false;
   const box = $("cards"); box.textContent = "";
+  const me = el("div", "card");
+  me.append(el("p", null, `${name} · Koda te: ${myCode()}`),
+    el("p", "tr", "Kodun bu. Başka bir telefonda açarsan ad ekranında bu kodu yaz; emeğin tek kişide toplanır."));
+  box.append(me);
   for (const t of index.tasks) {
     const c = el("div", "card");
     c.append(el("h2", null, t.ku), el("p", "tr", t.tr));
