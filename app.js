@@ -153,28 +153,77 @@ function installHint() {
 }
 
 // ---------- task cards ----------
+const IMP = { 3: "Pir girîng · Çok önemli", 2: "Girîng · Önemli", 1: "Asayî · Olağan" };
+// 20.11 (Resul): a few warm words now and then, asking for feedback. Kurmanji first, Turkish under it.
+const NUDGES = [
+  ["Her nêrîneke te modela me hinekî din fêrî kurmancî dike.", "Her görüşün modelimize biraz daha Kurmancî öğretiyor."],
+  ["Tiştek ne zelal bû? Bi hevokeke kurt ji me re binivîse, em dixwînin.", "Bir şey kafana mı takıldı? Bir cümleyle yaz, okuyoruz."],
+  ["Te dizanibû? Bi saya guhdariya dilxwazan me dît ku dengê me hîn pirsan wek pirs naxwîne.", "Biliyor muydun? Gönüllülerin dinlemesi sayesinde sesimizin soruları hâlâ soru gibi okumadığını gördük."],
+  ["Kîjan kar xweş bû, kîjan westiyayî? Bibêje, em sererast bikin.", "Hangi iş keyifliydi, hangisi yorucu? Söyle, düzeltelim."],
+  ["Spas ji bo keda te! Te dengekî ecêb bihîst? Ji me re binivîse.", "Emeğin için teşekkürler! Garip bir ses mi duydun? Bize yaz."],
+  ["Fikreke te heye ku kar hêsantir bibe? Em guhdar dikin.", "İşi kolaylaştıracak bir fikrin mi var? Dinliyoruz."],
+];
+function feedbackCard(justFinished) {
+  const [ku, tr] = NUDGES[Math.floor(Math.random() * NUDGES.length)];
+  const c = el("div", "card nudge");
+  const top = el("div", "row");
+  top.append(el("b", null, justFinished ? "Destê te sax be! · Eline sağlık!" : "Nêrîna te · Görüşün"));
+  const x = el("button", "x", "×"); x.setAttribute("aria-label", "Bigire · Kapat"); x.onclick = () => c.remove(); top.append(x);
+  c.append(top, el("p", null, ku), el("p", "tr", tr));
+  const open = el("button", "primary", "Nêrîna xwe binivîse · Görüşünü yaz");
+  const row = el("div", "row"); row.append(open); c.append(row);
+  open.onclick = () => {
+    row.remove();
+    const ta = el("textarea"); ta.setAttribute("aria-label", "Nêrîn · Görüş"); ta.maxLength = 2000;
+    const send = el("button", "primary", "Bişîne · Gönder"); const r2 = el("div", "row"); r2.append(send);
+    c.append(ta, r2); ta.focus();
+    send.onclick = async () => {
+      const text = ta.value.trim(); if (!text) return;
+      send.disabled = true;
+      // same shape as the hub's gorus/<uid> (kontrol/hub/kar/model.html): one doc per person, items appended
+      const old = (await docGet("gorus", `gorus/${uid}`)) || {};
+      const items = (old.items || []).concat([{ at: new Date().toISOString(), task: "defter", text }]);
+      await write("gorus", `gorus/${uid}`, "set", { nav: name, items });
+      c.textContent = "";
+      c.append(el("b", null, "Spas! Nêrîna te gihîşt me."), el("p", "tr", "Teşekkürler! Görüşün kaydedildi; internet gelince bize gider."));
+      setTimeout(() => c.remove(), 6000);
+    };
+  };
+  return c;
+}
 function myCode() { return uid.slice(3, 8).toUpperCase(); }
-async function showTasks() {
+async function showTasks(justFinished) {
   $("tasks").hidden = false; $("bar").hidden = false;
   const box = $("cards"); box.textContent = "";
   const me = el("div", "card");
   me.append(el("p", null, `${name} · Koda te: ${myCode()}`),
     el("p", "tr", "Kodun bu. Başka bir telefonda açarsan ad ekranında bu kodu yaz; emeğin tek kişide toplanır."));
   box.append(me);
-  for (const t of index.tasks) {
-    const c = el("div", "card");
-    c.append(el("h2", null, t.ku), el("p", "tr", t.tr));
+  // 20.11 (Resul): most important first, finished tests sink to the bottom by themselves
+  const rows = [];
+  for (const [i, t] of index.tasks.entries()) {
+    let n = 0, tot = 0;
+    if (!t.guide) { const k = await docGet(t.id, `katki-${t.id}/${uid}`); n = (k && k.n) || 0; tot = (k && k.total) || 0; }
+    rows.push({ t, i, n, tot, done: !t.guide && tot > 0 && n >= tot, lv: Number(t.imp) || 1 });
+  }
+  rows.sort((a, b) => (a.done - b.done) || (b.lv - a.lv) || (a.i - b.i));
+  // a warm note: right after a finished task, otherwise on about one opening in three
+  const finished = justFinished && rows.some((r) => r.t.id === justFinished && r.done);
+  if (finished || Math.random() < 0.35) box.append(feedbackCard(finished));
+  let sepShown = false;
+  for (const { t, n, tot, done, lv } of rows) {
+    if (done && !sepShown) { box.append(el("p", "sep", "Yên qediyayî · Bitirdiklerin")); sepShown = true; }
+    const c = el("div", "card imp" + lv + (done ? " done" : ""));
+    const chip = el("span", "chip imp" + lv); chip.append(el("i", "dot"), document.createTextNode(IMP[lv]));
+    c.append(chip, el("h2", null, t.ku), el("p", "tr", t.tr));
     if (t.kd) c.append(el("p", null, t.kd));
     if (t.td) c.append(el("p", "tr", t.td));
     const meta = el("div", "meta");
     if (t.min) meta.append(el("span", null, `⏱ ~${t.min} deqe · dk`));
-    if (!t.guide) {
-      const k = await docGet(t.id, `katki-${t.id}/${uid}`);
-      const n = (k && k.n) || 0, tot = (k && k.total) || 0;
-      if (n) meta.append(el("span", "pill" + (tot && n >= tot ? " ok" : ""), tot && n >= tot ? "✓ Qediya · Bitti" : `${n}${tot ? " / " + tot : ""}`));
-    }
+    if (n) meta.append(el("span", "pill" + (done ? " ok" : ""), done ? "✓ Qediya · Bitti" : `${n}${tot ? " / " + tot : ""}`));
     c.append(meta);
-    const row = el("div", "row"); const go = el("button", "primary", t.guide ? "Bixwîne · Oku" : "Dest pê bike · Başla");
+    const row = el("div", "row");
+    const go = el("button", done ? null : "primary", t.guide ? "Bixwîne · Oku" : done ? "Dîsa veke · Yeniden aç" : "Dest pê bike · Başla");
     go.onclick = () => openTask(t); row.append(go); c.append(row);
     box.append(c);
   }
@@ -192,7 +241,7 @@ async function openTask(t) {
   const m = /^\s*<!doctype[^>]*>/i.exec(html);
   $("ifr").srcdoc = m ? m[0] + boot + html.slice(m[0].length) : boot + html;
 }
-$("back").onclick = () => { closeSubs(); openId = null; $("frame").hidden = true; $("ifr").srcdoc = ""; showTasks(); };
+$("back").onclick = () => { const was = openId; closeSubs(); openId = null; $("frame").hidden = true; $("ifr").srcdoc = ""; showTasks(was); };
 
 // ---------- the db the task page sees ----------
 const SHIM = `(function(){var n=0,pend={},subs={};

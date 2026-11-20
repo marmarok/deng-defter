@@ -51,6 +51,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #frame header .st{font-size:.8rem;color:var(--muted)}
 #frame iframe{flex:1;width:100%;border:0;background:var(--bg)}
 .hint{border-left:3px solid var(--accent);padding-left:12px}
+/* 20.11: importance colours as on the hub (Karên Dilxwazan), finished work sinks, a friendly note asks for feedback */
+:root{--imp3:#b3261e;--imp2:#9a5b00;--imp1:#2f6a9e}
+@media (prefers-color-scheme:dark){:root{--imp3:#ff8a80;--imp2:#f0b45a;--imp1:#8cb8e6}}
+.card.imp3{border-left:6px solid var(--imp3)}.card.imp2{border-left:6px solid var(--imp2)}.card.imp1{border-left:6px solid var(--imp1)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600}
+.chip.imp3{color:var(--imp3)}.chip.imp2{color:var(--imp2)}.chip.imp1{color:var(--imp1)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.card.done{opacity:.72}
+.sep{font-size:.85rem;color:var(--muted);margin-top:6px}
+.nudge{border:1px dashed var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--card))}
+.nudge .x{min-height:32px;padding:0 10px;margin-left:auto}
+textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;padding:10px 12px;resize:vertical}
 </style>
 </head>
 <body>

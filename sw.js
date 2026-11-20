@@ -1,5 +1,5 @@
 // Shell: cache per version. Task data: kept until a newer version replaces it. index.bin: network first.
-const V = "eda9582d5d-3c1cf395";
+const V = "9ce311cd1f-5a53d1d7";
 const SHELL = ["./", "index.html", "app.js", "manifest.webmanifest", "salt.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open("shell-" + V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
