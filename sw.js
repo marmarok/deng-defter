@@ -1,5 +1,5 @@
 // Shell: cache per version. Task data: kept until a newer version replaces it. index.bin: network first.
-const V = "548d47635d-afa8dbd3";
+const V = "17454b7ae8-afa8dbd3";
 const SHELL = ["./", "index.html", "app.js", "manifest.webmanifest", "salt.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 // 21.11: "reload" skips the browser's HTTP cache (GitHub Pages keeps files 10 minutes), so a new version never stores old files
 self.addEventListener("install", (e) => { e.waitUntil(caches.open("shell-" + V).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting())); });
