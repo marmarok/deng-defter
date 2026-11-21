@@ -430,6 +430,14 @@ async function showTasks(justFinished) {
   const me = await findMe(), sc = await score(me);
   const cheer = await celebrateCard(sc); if (cheer) box.append(cheer);
   box.append(await meCard(me, sc));
+  // 21.11: a volunteer wrote "I understood nothing in this app": three steps for whoever has no point yet
+  if (!sc.pts) {
+    const c = el("div", "card hint");
+    c.append(el("b", null, "Ev sepan çawa dixebite? · Bu uygulama nasıl çalışır?"),
+      el("p", null, "1. Karekî hilbijêre: yên sor herî girîng in. 2. Guhdarî bike û bersiv bide; rast an çewt tune ye. 3. Bersivên te xwe bi xwe diçin, bê înternet jî tên tomarkirin. Her bersiv 1 xal e."),
+      el("p", "tr", "1. Bir iş seç: kırmızılar en önemlisi. 2. Dinle ve cevap ver; doğru ya da yanlış yok. 3. Cevapların kendiliğinden gider, internetsiz de kaydedilir. Her cevap 1 puan. Cevapların Kürtçe konuşan ve anlayan bir yapay zekâyı eğitiyor."));
+    box.append(c);
+  }
   // 20.11 (Resul): most important first; 21.11: finished tests sink to the bottom, faded, old tests under one button
   const rows = [];
   for (const [i, t] of index.tasks.entries()) {
