@@ -63,6 +63,38 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .nudge{border:1px dashed var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--card))}
 .nudge .x{min-height:32px;padding:0 10px;margin-left:auto}
 textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;padding:10px 12px;resize:vertical}
+/* 21.11: name + picture instead of a code; the volunteer's own card with level, garden and the weekly race */
+.signs{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px}
+.signs[hidden]{display:none!important}
+.sg{min-height:48px;padding:0;font-size:1.6rem;border-radius:10px;background:var(--bg)}
+.sg.on{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--card))}
+.claimrow{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.card.me{border:2px solid var(--accent)}
+.mehead{display:flex;gap:14px;align-items:center}
+.bigsign{font-size:2.6rem;line-height:1}
+.who{display:flex;flex-direction:column;min-width:0}
+.who b{font:600 1.25rem/1.2 var(--display);overflow-wrap:anywhere}
+.who .lv{font-weight:600;color:var(--accent)}
+.who .pts{font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.garden{font-size:1.35rem;letter-spacing:.06em;overflow-wrap:anywhere;line-height:1.5}
+.row.small button{min-height:38px;font-size:.85rem;padding:0 12px}
+.row.small button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.board h2{font-size:1.1rem}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.rank li{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:8px}
+.rank li.self{background:color-mix(in srgb,var(--accent) 12%,var(--card));font-weight:600}
+.rank .rk{width:2em;text-align:center;font-variant-numeric:tabular-nums}
+.rank .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.rank .xp{font-variant-numeric:tabular-nums;color:var(--muted)}
+.card.done{opacity:.5;filter:grayscale(.6)}
+.card.done:hover,.card.done:focus-within{opacity:.85}
+.cheer{text-align:center;align-items:center;border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--card))}
+.cheerbig{font-size:3.4rem;line-height:1.1}
+@media (prefers-reduced-motion:no-preference){.cheerbig{animation:pop .6s ease-out}@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}}
+.oldbox{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.oldbox>button{align-self:flex-start}
+.old{list-style:none;margin:0;padding:0 4px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.old[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -84,17 +116,18 @@ textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid var(--lin
   </section>
 
   <section id="who" class="card" hidden>
-    <h2>Navê te · Adın</h2>
-    <p>Nav an navê veşartî binivîse, da ku em bizanin kar ji kê hatiye.</p>
-    <p class="tr">Adını ya da takma adını yaz; emeğin kimden geldiğini bilelim.</p>
-    <form id="whoForm" class="row" autocomplete="off">
-      <input id="nav" type="text" maxlength="60" aria-label="Nav · Ad" required>
-      <p>Heke te berê li telefon an komputereke din xebitîbû, koda xwe ya berê jî binivîse (ne mecbûrî ye).</p>
-      <p class="tr">Daha önce başka bir telefonda ya da bilgisayarda çalıştıysan eski kodunu da yaz (zorunlu değil).</p>
-      <input id="kod" type="text" maxlength="8" aria-label="Koda berê · Eski kod" autocapitalize="characters" placeholder="ABCDE">
-      <button class="primary" type="submit">Tomar bike · Kaydet</button>
+    <h2>Navê te û nîşana te · Adın ve resmin</h2>
+    <p>Nav an navê xwe yê veşartî binivîse û wêneyekî hilbijêre. Ev herdu bes in: kod tune, şîfre tune. Li telefoneke din jî heman nav û heman wêneyî hilbijêre, keda te tê.</p>
+    <p class="tr">Adını ya da takma adını yaz ve bir resim seç. Bu ikisi yeter: kod yok, şifre yok. Başka bir telefonda da aynı adı ve aynı resmi seç, emeğin gelir. Sıralamada yalnız ilk adın ve soyadının baş harfi görünür.</p>
+    <form id="whoForm" autocomplete="off" style="display:flex;flex-direction:column;gap:10px">
+      <input id="nav" type="text" maxlength="60" aria-label="Nav · Ad" placeholder="Navê te · Adın" required>
+      <div id="signs" class="signs" role="group" aria-label="Nîşan · Resim"></div>
+      <p id="signLbl" class="okc"></p>
+      <div class="row"><button class="primary" type="submit">Tomar bike · Kaydet</button></div>
     </form>
   </section>
+
+  <section id="claim" class="card" hidden></section>
 
   <section id="dl" class="card" hidden>
     <h2 id="dlT">Kar tên daxistin… · İşler iniyor…</h2>

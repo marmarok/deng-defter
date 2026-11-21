@@ -1,5 +1,5 @@
 // Shell: cache per version. Task data: kept until a newer version replaces it. index.bin: network first.
-const V = "f5aaeb5a92-5a53d1d7";
+const V = "548d47635d-bdb86cf8";
 const SHELL = ["./", "index.html", "app.js", "manifest.webmanifest", "salt.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open("shell-" + V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
@@ -18,4 +18,25 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || fetch(e.request).catch(() => (e.request.mode === "navigate" ? caches.match("index.html") : Response.error()))));
+});
+// 21.11: gentle reminders. The Mac sends an empty push (no payload to encrypt) at most every four days, by day; the
+// words are chosen here. Silent, one at a time (the same tag replaces an older one), a tap opens the app.
+const MSG = [
+  ["Karekî biçûk li benda te ye.", "Seni bekleyen küçük bir iş var."],
+  ["Çend deqe guhdarî modela me fêrî kurmancî dike.", "Birkaç dakikalık dinleme modelimize Kurmancî öğretiyor."],
+  ["Baxçeyê te li benda kulîlkeke nû ye. 🌷", "Bahçen yeni bir çiçek bekliyor."],
+  ["Spas ji bo keda te! Dema te hebe, em li vir in.", "Emeğin için teşekkürler! Vaktin olursa buradayız."],
+];
+self.addEventListener("push", (e) => {
+  let d = null; try { d = e.data ? e.data.json() : null; } catch (x) { d = null; }
+  const m = MSG[Math.floor(Date.now() / 86400000) % MSG.length];
+  e.waitUntil(self.registration.showNotification((d && d.title) || "Deng Defter",
+    { body: (d && d.body) || m[0] + "\n" + m[1], icon: "icon-192.png", badge: "icon-192.png", tag: "deng-defter", silent: true, data: { url: "./" } }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ws) => {
+    for (const w of ws) if ("focus" in w) return w.focus();
+    return self.clients.openWindow("./");
+  }));
 });
