@@ -49,7 +49,17 @@ async function openFile(url, k) {
 const OPEN_PW = "deng"; // same as .parola; shown on the lock card
 // ---------- boot ----------
 (async () => {
-  if ("serviceWorker" in navigator) { try { await navigator.serviceWorker.register("sw.js"); } catch (e) {} }
+  if ("serviceWorker" in navigator) {
+    // 21.11: a new version used to show only on the second opening; when a new worker takes over an already
+    // controlled page, reload once, but never while a task is open or a name is being typed
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController || window.__dlxReloaded) return;
+      window.__dlxReloaded = true;
+      if ($("frame").hidden && $("who").hidden && $("claim").hidden) location.reload(); else window.__dlxReloadOnBack = true;
+    });
+    try { await navigator.serviceWorker.register("sw.js"); } catch (e) {}
+  }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   uid = await kvGet("uid");
   if (!uid) { uid = "dd_" + Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 14); await kvSet("uid", uid); }
@@ -509,7 +519,7 @@ async function openTask(t) {
   const m = /^\s*<!doctype[^>]*>/i.exec(html);
   $("ifr").srcdoc = m ? m[0] + boot + html.slice(m[0].length) : boot + html;
 }
-$("back").onclick = () => { const was = openId; closeSubs(); openId = null; $("frame").hidden = true; $("ifr").srcdoc = ""; showTasks(was); };
+$("back").onclick = () => { const was = openId; closeSubs(); openId = null; $("frame").hidden = true; $("ifr").srcdoc = ""; if (window.__dlxReloadOnBack) { location.reload(); return; } showTasks(was); };
 
 // ---------- the db the task page sees ----------
 const SHIM = `(function(){var n=0,pend={},subs={};
