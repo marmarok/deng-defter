@@ -30,7 +30,7 @@ const kvGet = (k) => tx("kv", "readonly", (s) => req(s.get(k)));
 const kvSet = (k, v) => tx("kv", "readwrite", (s) => { s.put(v, k); });
 
 // ---------- crypto ----------
-let key = null, index = null, uid = null, name = "";
+let key = null, teamKey = null, index = null, uid = null, name = "";
 async function derive(pw) {
   const s = await (await fetch("salt.json")).json();
   const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw.trim()), "PBKDF2", false, ["deriveKey"]);
@@ -64,10 +64,13 @@ const OPEN_PW = "deng"; // same as .parola; shown on the lock card
   uid = await kvGet("uid");
   if (!uid) { uid = "dd_" + Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 14); await kvSet("uid", uid); }
   name = (await kvGet("name")) || "";
-  key = await kvGet("key");
-  // The link carries the password after "#" (never sent to the server): a tap on the link opens the app, no typing
-  const fromLink = decodeURIComponent((location.hash || "").slice(1));
+  key = await kvGet("key"); teamKey = (await kvGet("teamkey")) || null;
+  // The link carries the password after "#" (never sent to the server): a tap on the link opens the app, no typing.
+  // 25.11 (guhdari-4, Ek 2): "#deng.<team key>" carries the team key too; team tasks are sealed with it, not with "deng"
+  let fromLink = decodeURIComponent((location.hash || "").slice(1));
   if (fromLink) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+  const dot = fromLink.indexOf(".");
+  if (dot > 0) { const tk = fromLink.slice(dot + 1); fromLink = fromLink.slice(0, dot); try { teamKey = await derive(tk); await kvSet("teamkey", teamKey); } catch (e) {} }
   if (!key && fromLink && await unlock(fromLink)) return;
   // the password is printed on the lock card anyway (volunteers are friends, Resul wants no typing): try it before asking
   if (!key && await unlock(OPEN_PW)) return;
@@ -512,8 +515,8 @@ async function openTask(t) {
   $("ftitle").textContent = t.ku; $("fst").textContent = ""; $("frame").hidden = false;
   if (t.guide) kvSet("read-" + t.id, 1);
   let html;
-  try { html = await openFile(t.file); }
-  catch (e) { html = "<p style='font:16px system-ui;padding:16px'>Kar nehat vekirin. Dema înternet hebe dîsa biceribîne. · İş açılamadı; internet varken yeniden dene.</p>"; }
+  try { if (t.team && !teamKey) throw new Error("team"); html = await openFile(t.file, t.team ? teamKey : null); }
+  catch (e) { html = t.team ? "<p style='font:16px system-ui;padding:16px'>🔒 Ev kar tenê bi girêdana nû ya koma WhatsAppê vedibe: girêdanê ji komê veke. · Bu iş yalnız WhatsApp grubundaki yeni bağlantıyla açılır: bağlantıyı gruptan aç.</p>" : "<p style='font:16px system-ui;padding:16px'>Kar nehat vekirin. Dema înternet hebe dîsa biceribîne. · İş açılamadı; internet varken yeniden dene.</p>"; }
   openId = t.id; closeSubs();
   const boot = `<script>window.DLX_TASK=${JSON.stringify(t.id)};${SHIM}<\/script>`;
   const m = /^\s*<!doctype[^>]*>/i.exec(html);
